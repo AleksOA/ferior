@@ -1,0 +1,317 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+html {
+    scroll-behavior: smooth;
+}
+body {
+    overflow-x: hidden;
+    margin-top: 0;
+    margin-bottom: 0;
+    font-family: 'Montserrat', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 26px;
+    color: #242424;
+    background-color: #F5F5F5;
+}
+body.popup-open {
+    height: 100vh;
+    overflow: hidden
+}
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/*Fonts, buttons, input, textarea
+=======================================================================*/
+/*font-family: 'Montserrat', sans-serif;*/
+/*font-family: 'Libre Franklin', sans-serif;*/
+/*font-family: 'Noto Sans', sans-serif;*/
+/*font-family: 'Open Sans', sans-serif;*/
+
+button, input, textarea {
+    padding: 0;
+    border: none;
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+    cursor: pointer;
+    outline: -webkit-focus-ring-color auto 0;
+}
+button:focus-visible {
+    outline: -webkit-focus-ring-color auto 0;
+}
+
+
+/*Home start
+=================================*/
+/*Section TOP
+===============================*/
+.btn-link {
+    box-sizing: border-box;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 32px;
+    text-transform: uppercase;
+    color: #F5F5F5;
+    padding: 12px 40px;
+    border: 2px solid rgb(48 108 26 / 100%);
+    background-color: rgb(48 108 26 / 100%);
+    box-shadow: 0 3px 16px 2px rgba(74, 76, 80, 0.8);
+    border-radius: 12px;
+    transition: all 0.3s, scale 0.1s ;
+    text-align: center;
+    display: inline-block;
+    letter-spacing: 0.06em;
+    margin-top: 30px;
+    text-decoration: none;
+}
+
+.btn-link:hover {
+    background-color: rgb(36 124 2);
+    border: 2px solid rgb(36 124 2);
+}
+.btn-link:active {
+    scale: 0.99;
+    background-color: rgb(26 68 10);
+    border: 2px solid rgb(26 68 10);
+}
+
+
+
+/*Main form
+============================*/
+.form {
+    margin: 100px auto;
+}
+.form__title {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.main-form {
+    max-width: 600px;
+    background: #FFFFFF;
+    box-shadow: 0 3px 16px 2px rgba(74, 76, 80, 0.15);
+    padding: 50px 40px;
+    border-radius: 12px;
+    margin: 0 auto;
+}
+input::placeholder {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 28px;
+    text-transform: capitalize;
+    color: #242424;
+    opacity: 0.6;
+}
+
+.main-form__first-name,
+.main-form__last-name,
+.main-form__email,
+.main-form__site-name,
+.main-form__password,
+.main-form__password-check,
+.main-form__site-url,
+.main-form__username {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 28px;
+    color: #242424;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid rgba(74, 76, 80, 0.3);
+    border-radius: 8px;
+    margin-top: 30px;
+    transition: all 0.2s;
+}
+.main-form__first-name{
+    margin-top: 0;
+}
+.main-form__first-name:hover,
+.main-form__last-name:hover,
+.main-form__email:hover,
+.main-form__site-name:hover,
+.main-form__password:hover,
+.main-form__password-check:hover,
+.main-form__site-url:hover,
+.main-form__username:hover {
+    transition: all 0.3s;
+    box-shadow: 0 3px 16px 2px rgb(48 108 26 / 0.2);
+    border: 1px solid rgba(48, 108, 26, 0.6);
+}
+
+.main-form__first-name:focus-visible,
+.main-form__last-name:focus-visible,
+.main-form__email:focus-visible,
+.main-form__site-nam:focus-visible,
+.main-form__password:focus-visible,
+.main-form__password-check:focus-visible,
+.main-form__site-url:focus-visible,
+.main-form__username:focus-visible{
+    box-shadow: 0 3px 16px 2px rgba(74, 76, 80, 0.40);
+    border: 1px solid rgba(74, 76, 80, 0.6);
+    cursor: text;
+}
+
+.main-form__last-name {}
+.main-form__email {}
+.main-form__site-name {}
+.main-form__submit {
+    box-sizing: border-box;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 32px;
+    text-transform: uppercase;
+    color: #F5F5F5;
+    padding: 12px 40px;
+    border: 2px solid rgb(48 108 26 / 100%);
+    background-color: rgb(48 108 26 / 100%);
+    box-shadow: 0 3px 16px 2px rgba(74, 76, 80, 0.8);
+    border-radius: 12px;
+    transition: all 0.3s, scale 0.1s ;
+    text-align: center;
+    display: inline-block;
+    letter-spacing: 0.06em;
+    margin-top: 30px;
+}
+.main-form__submit:hover {
+    background-color: rgb(36 124 2);
+    border: 2px solid rgb(36 124 2);
+}
+.main-form__submit:active {
+    scale: 0.99;
+    background-color: rgb(26 68 10);
+    border: 2px solid rgb(26 68 10);
+
+}
+form p{
+    text-align: center;
+}
+.wpcf7-spinner {
+    display: none;
+}
+
+/*=================================
+Home finish*/
+
+/*404 start
+============================*/
+.top-404 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: fixed;
+}
+.top-404__wrapper {
+
+}
+.top-404__name {
+
+}
+.name {
+    color: #9e1313;
+    font-size: 20vw;
+    line-height: 25vw;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    text-align: center;
+}
+.top-404__content {
+    text-align: center;
+}
+.top-404__text h1 {
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 44px;
+    line-height: 56px;
+    letter-spacing: 0.06em;
+    color: #0a4b78;
+    margin-bottom: 40px;
+}
+.top-404__btn {
+    box-sizing: border-box;
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 32px;
+    text-transform: uppercase;
+    color: #F5F5F5;
+    padding: 12px 40px;
+    border: 2px solid rgb(48 108 26 / 100%);
+    background-color: rgb(48 108 26 / 100%);
+    box-shadow: 0 3px 16px 2px rgba(74, 76, 80, 0.8);
+    border-radius: 12px;
+    transition: all 0.3s, scale 0.1s ;
+    text-align: center;
+    display: inline-block;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+}
+.top-404__btn:hover {
+    background-color: rgb(36 124 2);
+    border: 2px solid rgb(36 124 2);
+}
+.top-404__btn:active {
+    scale: 0.99;
+    background-color: rgb(26 68 10);
+    border: 2px solid rgb(26 68 10);
+
+}
+
+
+/*=================================
+404 finish*/
+
+
+/*Adaptation start
+==================================================================================================*/
+/*Home start
+=====================*/
+@media(max-width: 550px){
+    .main-form {
+        padding: 50px 30px;
+    }
+    .main-form__submit {
+        width: 100%;
+    }
+}
+/*=====================
+Home finish */
+
+
+/*404 start
+=====================*/
+@media(max-width: 700px){
+    .top-404__text h1 {
+        font-size: 30px;
+        line-height: 40px;
+    }
+    .top-404__btn {
+        padding: 8px 12px;
+    }
+    .name {
+        margin-top: -60px;
+    }
+}
+
+@media(max-width: 366px){
+    .name {
+        margin-top: -70px;
+    }
+}
+/*=====================
+404 finish */
+

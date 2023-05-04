@@ -57,6 +57,17 @@ define( 'SECURE_AUTH_SALT', 'my0s0yate2dvzmtotwaofux0zzv6p0qkr4bw1hmtqs1xyoym41o
 define( 'LOGGED_IN_SALT',   '9h8zgjortzrkg6h8khvhkgnwxgbpipmjtmvznk4pyqiyilxg9sud3b2ugfwppo4b' );
 define( 'NONCE_SALT',       'pwbdyb0vyaxp0yrazxb61txxwspg8dnpscnvpkqndrrcjiqwa5ffpcnr3i7qipja' );
 
+
+// Multisite
+define( 'WP_ALLOW_MULTISITE', true );
+define( 'MULTISITE', true );
+define( 'SUBDOMAIN_INSTALL', true );
+define( 'DOMAIN_CURRENT_SITE', 'ferior.com.ua' );
+define( 'PATH_CURRENT_SITE', '/' );
+define( 'SITE_ID_CURRENT_SITE', 1 );
+define( 'BLOG_ID_CURRENT_SITE', 1 );
+
+
 /**#@-*/
 
 /**
