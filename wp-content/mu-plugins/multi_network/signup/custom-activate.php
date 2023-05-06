@@ -21,9 +21,8 @@ function multi_network_activate_main(){
 
     $valid_error_codes = array( 'already_active', 'blog_taken' );
 
-    list( $activate_path ) = explode( '?', wp_unslash( $_SERVER['REQUEST_URI'] ) );
+    list( $activate_path ) = explode( '/?', wp_unslash( $_SERVER['REQUEST_URI'] ) );
     $activate_cookie       = 'wp-activate-' . COOKIEHASH;
-
     $key    = '';
     $result = null;
 
@@ -36,21 +35,34 @@ function multi_network_activate_main(){
     }
 
     if ( $key ) {
+
         $redirect_url = remove_query_arg( 'key' );
+
 
         if ( remove_query_arg( false ) !== $redirect_url ) {
             setcookie( $activate_cookie, $key, 0, $activate_path, COOKIE_DOMAIN, is_ssl(), true );
             wp_safe_redirect( $redirect_url );
             exit;
         } else {
-            $result = wpmu_activate_signup( $key );
+//        $result = wpmu_activate_signup( $key ); // ==== WAS ====
+            $result = custom_activate_signup( $key );
+            echo '<pre>'; var_dump($result);  // my code
         }
     }
 
     if ( null === $result && isset( $_COOKIE[ $activate_cookie ] ) ) {
         $key    = $_COOKIE[ $activate_cookie ];
-        $result = wpmu_activate_signup( $key );
+//        $result = wpmu_activate_signup( $key ); // ==== WAS ====
+        $result = custom_activate_signup( $key );
         setcookie( $activate_cookie, ' ', time() - YEAR_IN_SECONDS, $activate_path, COOKIE_DOMAIN, is_ssl(), true );
+
+        if($result['user_id']) {
+            $blog_id = get_current_blog_id(); // my code
+            $user_id = $result['user_id']; // my code
+            $role = 'subscriber'; // my code
+            $resultt = add_user_to_blog( $blog_id, $user_id, $role ); // my code
+        }
+
     }
 
     if ( null === $result || ( is_wp_error( $result ) && 'invalid_key' === $result->get_error_code() ) ) {
@@ -65,12 +77,12 @@ function multi_network_activate_main(){
 
     nocache_headers();
 
-//if ( is_object( $wp_object_cache ) ) {
-//	$wp_object_cache->cache_enabled = false;
-//}
-//
-//// Fix for page title.
-//$wp_query->is_404 = false;
+if ( is_object( $wp_object_cache ) ) {
+	$wp_object_cache->cache_enabled = false;
+}
+
+// Fix for page title.
+$wp_query->is_404 = false;
 
     /**
      * Fires before the Site Activation page is loaded.
@@ -98,6 +110,7 @@ function multi_network_activate_main(){
     }
     add_action( 'wp_head', 'do_activate_header' );
 
+    get_header( );
     /**
      * Loads styles specific to this page.
      *
@@ -128,7 +141,7 @@ function multi_network_activate_main(){
     ?>
   <div id="signup-content" class="widecolumn">
 	<div class="wp-activate-container">
-	<?php if ( ! $key ) { ?>
+	<?php if ( !$key ) { ?>
 
 		<h2><?php _e( 'Activation Key Required' ); ?></h2>
 		<form name="activateform" id="activateform" method="post" action="<?php echo network_site_url( $blog_details->path . 'wp-activate.php' ); ?>">
@@ -189,7 +202,6 @@ function multi_network_activate_main(){
 
 			<?php
 			if ( $url && network_home_url( '', 'http' ) !== $url ) :
-				switch_to_blog( (int) $result['blog_id'] );
 				$login_url = wp_login_url();
 				restore_current_blog();
 				?>
@@ -205,8 +217,10 @@ function multi_network_activate_main(){
 					printf(
 						/* translators: 1: Login URL, 2: Network home URL. */
 						__( 'Your account is now activated. <a href="%1$s">Log in</a> or go back to the <a href="%2$s">homepage</a>.' ),
-						network_site_url( $blog_details->path . 'wp-login.php', 'login' ),
-						network_home_url( $blog_details->path )
+//						network_site_url( $blog_details->path . 'wp-login.php', 'login' ), // ==== WAS ====
+//						network_home_url( $blog_details->path ) // ==== WAS ====
+                        site_url( $blog_details->path . 'wp-login.php', 'login' ), // my code
+						home_url( $blog_details->path ) // my code
 					);
 				?>
 				</p>
@@ -218,6 +232,7 @@ function multi_network_activate_main(){
 	</div>
 </div>
   <?php
+    get_footer();
 }
 
 add_shortcode( 'activate', 'multi_network_activate_main' );

@@ -52,6 +52,9 @@ button:focus-visible {
 =================================*/
 /*Section TOP
 ===============================*/
+.top {
+    margin-bottom: 30px;
+}
 .btn-link {
     box-sizing: border-box;
     font-family: 'Libre Franklin', sans-serif;
@@ -119,7 +122,8 @@ input::placeholder {
 .main-form__password,
 .main-form__password-check,
 .main-form__site-url,
-.main-form__username {
+.main-form__username,
+.form-sing-up__form input {
     font-family: 'Montserrat', sans-serif;
     font-weight: 400;
     font-size: 18px;
@@ -136,6 +140,16 @@ input::placeholder {
 .main-form__first-name{
     margin-top: 0;
 }
+.form-sing-up__form input {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+#wp-signup-username-description {
+    margin-bottom: 30px;
+}
+.form-sing-up__form .error {
+    color: red;
+}
 .main-form__first-name:hover,
 .main-form__last-name:hover,
 .main-form__email:hover,
@@ -143,7 +157,8 @@ input::placeholder {
 .main-form__password:hover,
 .main-form__password-check:hover,
 .main-form__site-url:hover,
-.main-form__username:hover {
+.main-form__username:hover,
+.form-sing-up__form input:hover {
     transition: all 0.3s;
     box-shadow: 0 3px 16px 2px rgb(48 108 26 / 0.2);
     border: 1px solid rgba(48, 108, 26, 0.6);
@@ -156,7 +171,8 @@ input::placeholder {
 .main-form__password:focus-visible,
 .main-form__password-check:focus-visible,
 .main-form__site-url:focus-visible,
-.main-form__username:focus-visible{
+.main-form__username:focus-visible,
+.form-sing-up__form input:focus-visible {
     box-shadow: 0 3px 16px 2px rgba(74, 76, 80, 0.40);
     border: 1px solid rgba(74, 76, 80, 0.6);
     cursor: text;
@@ -165,7 +181,8 @@ input::placeholder {
 .main-form__last-name {}
 .main-form__email {}
 .main-form__site-name {}
-.main-form__submit {
+.main-form__submit,
+p .submit {
     box-sizing: border-box;
     font-family: 'Libre Franklin', sans-serif;
     font-weight: 700;
@@ -184,11 +201,13 @@ input::placeholder {
     letter-spacing: 0.06em;
     margin-top: 30px;
 }
-.main-form__submit:hover {
+.main-form__submit:hover,
+p .submit:hover{
     background-color: rgb(36 124 2);
     border: 2px solid rgb(36 124 2);
 }
-.main-form__submit:active {
+.main-form__submit:active,
+p .submit:active {
     scale: 0.99;
     background-color: rgb(26 68 10);
     border: 2px solid rgb(26 68 10);

@@ -201,7 +201,7 @@ function show_user_form( $user_name = '', $user_email = '', $errors = '' ) {
 	}
 
 	// Username.
-	echo '<label for="user_name">' . __( 'Username:' ) . '</label>';
+//	echo '<label for="user_name">' . __( 'Username:' ) . '</label>';
 	$errmsg_username      = $errors->get_error_message( 'user_name' );
 	$errmsg_username_aria = '';
 	if ( $errmsg_username ) {
@@ -209,12 +209,12 @@ function show_user_form( $user_name = '', $user_email = '', $errors = '' ) {
 		echo '<p class="error" id="wp-signup-username-error">' . $errmsg_username . '</p>';
 	}
 	?>
-	<input name="user_name" type="text" id="user_name" value="<?php echo esc_attr( $user_name ); ?>" autocapitalize="none" autocorrect="off" maxlength="60" autocomplete="username" required="required" aria-describedby="<?php echo $errmsg_username_aria; ?>wp-signup-username-description" />
+	<input name="user_name" type="text" id="user_name" value="<?php echo esc_attr( $user_name ); ?>" autocapitalize="none" autocorrect="off" maxlength="60" autocomplete="username" required="required" aria-describedby="<?php echo $errmsg_username_aria; ?>wp-signup-username-description" placeholder="Username"/>
 	<p id="wp-signup-username-description"><?php _e( '(Must be at least 4 characters, lowercase letters and numbers only.)' ); ?></p>
 
 	<?php
 	// Email address.
-	echo '<label for="user_email">' . __( 'Email&nbsp;Address:' ) . '</label>';
+//	echo '<label for="user_email">' . __( 'Email&nbsp;Address:' ) . '</label>';
 	$errmsg_email      = $errors->get_error_message( 'user_email' );
 	$errmsg_email_aria = '';
 	if ( $errmsg_email ) {
@@ -222,7 +222,7 @@ function show_user_form( $user_name = '', $user_email = '', $errors = '' ) {
 		echo '<p class="error" id="wp-signup-email-error">' . $errmsg_email . '</p>';
 	}
 	?>
-	<input name="user_email" type="email" id="user_email" value="<?php echo esc_attr( $user_email ); ?>" maxlength="200" autocomplete="email" required="required" aria-describedby="<?php echo $errmsg_email_aria; ?>wp-signup-email-description" />
+	<input name="user_email" type="email" id="user_email" value="<?php echo esc_attr( $user_email ); ?>" maxlength="200" autocomplete="email" required="required" aria-describedby="<?php echo $errmsg_email_aria; ?>wp-signup-email-description" placeholder="Email Address" />
 	<p id="wp-signup-email-description"><?php _e( 'Your registration email is sent to this address. (Double-check your email address before continuing.)' ); ?></p>
 
 	<?php
@@ -555,7 +555,7 @@ function signup_user( $user_name = '', $user_email = '', $errors = '' ) {
 		printf( __( 'Get your own %s account in seconds' ), get_network()->site_name );
 	?>
 	</h2>
-	<form id="setupform" method="post" action="wp-signup.php" novalidate="novalidate">
+	<form id="setupform" method="post" action="" novalidate="novalidate">
 		<input type="hidden" name="stage" value="validate-user-signup" />
 		<?php
 		/** This action is documented in wp-signup.php */
@@ -612,8 +612,8 @@ function validate_user_signup() {
 	}
 
 	/** This filter is documented in wp-signup.php */
-	wpmu_signup_user( $user_name, $user_email, apply_filters( 'add_signup_meta', array() ) );
-
+//	wpmu_signup_user( $user_name, $user_email, apply_filters( 'add_signup_meta', array() ) ); //===== WAS =====
+    custom_signup_user( $user_name, $user_email, apply_filters( 'add_signup_meta', array() ) );
 	confirm_user_signup( $user_name, $user_email );
 	return true;
 }

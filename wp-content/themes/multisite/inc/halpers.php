@@ -131,23 +131,12 @@ function wpcf7_before_send_mail_action() {
         'title' => $site_name,
         'user_id' => $current_user_ID,
         'options' => array(
-                'template' => 'twentytwentytwo',
-                'stylesheet' => 'twentytwentytwo',
-                'current_theme' => 'Twenty Twenty-Two'
+                'template' => 'multisite',
+                'stylesheet' => 'multisite'
+//                'current_theme' => 'Twenty Twenty-Two'
             )
     );
     wp_insert_site( $data_site );
-    $login_url = 'http://' . $data_site["domain"] . '/wp-login.php';
-//    wp_safe_redirect($login_url, 301);
-//    exit;
-
-//    header ('Location: http://site2.multisite.loc/wp-login.php');
-//    exit;
-
-//    echo '<meta http-equiv="refresh" content="0;url=http://site2.multisite.loc/wp-login.php">';
-
-
-//    do_action( 'my_action');
 }
 
 
@@ -182,7 +171,7 @@ function custom_validation_input_main_form($result,$tag){
     if($type == 'text*') {
         if($input_name == 'site_url' ) {
             $the_current_value = $_POST[$input_name];
-            $current_domain = $the_current_value . '.multisite.loc';
+            $current_domain = $the_current_value . '.ferior.com.ua';
             $object_sites_name = get_sites();
             $sites_name = [];
             if( $object_sites_name ) : foreach ( $object_sites_name as $item ) :
@@ -208,10 +197,6 @@ function custom_validation_input_main_form($result,$tag){
 
 
 
-function button() {
-    echo '<button id="btnTest"> TEST </button>';
-}
-
 // Sign Up form
 // ==================================
 function wpcf7_before_send_mail_sign_up(){
@@ -223,7 +208,6 @@ function wpcf7_before_send_mail_sign_up(){
         $email = $posted_data['emailSignUp'];
         $password = $posted_data['passwordSignUp-1'];
     }
-
 
 
     $userdata = array(
@@ -265,11 +249,74 @@ function custom_validation_input_sign_up_form($result,$tag){
     return $result;
 //    echo '<pre>'; var_dump($current_user_ID); die();
 }
-
-
-
-
 // ==================================
+
+
+
+
+// Create new pages: Sign Up and Activate
+// ============================================
+function createNewPage($title, $content, $template ){
+    $new_page_title = $title;
+    $new_page_content = $content;
+    $new_page_template = $template;
+
+
+    $page_check  = new WP_Query(
+        [
+            'post_type'              => 'page',
+            'title'                  => $new_page_title
+        ]
+    );
+
+    $new_page = array(
+        'post_type' => 'page',
+        'post_title' => $new_page_title,
+        'post_content' => $new_page_content,
+        'post_status' => 'publish',
+        'post_author' => 1,
+    );
+    if(count($page_check->posts) == 0 ){
+        $new_page_id = wp_insert_post($new_page);
+
+        if(!empty($new_page_template)){
+            update_post_meta($new_page_id, '_wp_page_template', $new_page_template);
+        }
+    }
+
+    if($new_page_title == 'Home'){
+        $page_ID = $page_check->posts[0]->ID;
+        update_option( 'show_on_front', 'page', true);
+        update_option( 'page_on_front', $page_ID, true);
+    }
+}
+
+function custom_activated_plugin_action() {
+    createNewPage('Home', '', 'template_pages/home_template.php' );
+    createNewPage('Signup', '', 'template_pages/signup_template.php' );
+    createNewPage('Activate', '', 'template_pages/activate_template.php' );
+}
+
+add_action( 'admin_init', 'custom_activated_plugin_action', 10, 2 );
+add_action( 'switch_theme', 'custom_activated_plugin_action', 10, 2 );
+add_action( 'after_switch_theme', 'custom_activated_plugin_action', 10, 2 );
+
+
+
+
+//function force_static_page(){
+//    update_option( 'show_on_front', 'page', true);
+//    update_option( 'page_on_front', 'home', true);
+//}
+//add_action('init', __NAMESPACE__ . '\\force_static_page');
+
+
+
+// ==========================================
+
+
+
+
 
 
 
