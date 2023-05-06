@@ -6,6 +6,7 @@ load_muplugin_textdomain( 'multi_network', '/multi_network/languages/' );
 require WPMU_PLUGIN_DIR . '/multi_network/signup/plugin.php';
 // ===================================
 
-require WPMU_PLUGIN_DIR . '/multi_network/signup/wp-signup.php';
 
-require WPMU_PLUGIN_DIR . '/multi_network/signup/wp-activate.php';
+require WPMU_PLUGIN_DIR . '/multi_network/signup/custom-activate.php';
+
+require WPMU_PLUGIN_DIR . '/multi_network/signup/custom-signup.php';
