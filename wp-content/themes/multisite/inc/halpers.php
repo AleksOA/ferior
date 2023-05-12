@@ -295,28 +295,48 @@ function custom_activated_plugin_action() {
     createNewPage('Home', '', 'template_pages/home_template.php' );
     createNewPage('Signup', '', 'template_pages/signup_template.php' );
     createNewPage('Activate', '', 'template_pages/activate_template.php' );
+    createNewPage('Login', '', 'template_pages/login_template.php' );
 }
 
 add_action( 'admin_init', 'custom_activated_plugin_action', 10, 2 );
 add_action( 'switch_theme', 'custom_activated_plugin_action', 10, 2 );
 add_action( 'after_switch_theme', 'custom_activated_plugin_action', 10, 2 );
-
-
-
-
-//function force_static_page(){
-//    update_option( 'show_on_front', 'page', true);
-//    update_option( 'page_on_front', 'home', true);
-//}
-//add_action('init', __NAMESPACE__ . '\\force_static_page');
-
-
-
 // ==========================================
 
 
+// Redirect from /wp-login.pnp to /login =================
+function redirect_login_page() {
+    $login_page  = home_url( '/login' );
+    $loggedout = home_url( '/login?loggedout=true&wp_lang=en_US' );
+    $lostpassword = home_url( '/login?action=lostpassword' );
+    $page_viewed = basename($_SERVER['REQUEST_URI']);
+
+    if( $page_viewed == "wp-login.php" && $_SERVER['REQUEST_METHOD'] == 'GET') {
+        wp_redirect($login_page);
+        exit;
+    }
+    if( $page_viewed == "wp-login.php?loggedout=true&wp_lang=en_US" && $_SERVER['REQUEST_METHOD'] == 'GET') {
+        wp_redirect($loggedout);
+        exit;
+    }
+    if( $page_viewed == "wp-login.php?action=lostpassword" && $_SERVER['REQUEST_METHOD'] == 'GET') {
+        wp_redirect($lostpassword);
+        exit;
+    }
+}
+add_action('init','redirect_login_page');
+//========================================================
 
 
+
+// redirect to custom lostpassword =====================
+
+add_filter( 'lostpassword_url', 'custom_lost_pass_link' );
+
+function custom_lost_pass_link(){
+    return site_url( '/login?action=lostpassword' );
+}
+// ========================================================
 
 
 

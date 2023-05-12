@@ -3,13 +3,14 @@
   Template Name: Home
  */
 ?>
-
+<?php session_start(); ?>
 <?php get_header(); ?>
 <main>
     <section class="top">
         <div class="container">
             <a class="btn-signUp btn-link" id="btnSignUp" href="<?php echo home_url('signup') ?>">SIGN UP</a>
             <a class="btn-signUp btn-link" id="btnSignUp" href="<?php echo home_url('wp-login.php') ?>">LOGIN</a>
+            <a class="btn-signUp btn-link" id="btnSignUp" href="<?php echo home_url('login') ?>">LOGIN custom</a>
         </div>
     </section>
     <?php
@@ -39,8 +40,23 @@
             </div>
         </section>
     <?php endif; ?>
-
-
 </main>
+
+    <?php
+global $wpdb;
+$user_email = 'ovcharenko.dev@ukr.net';
+$user_ID = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM wpfe_users WHERE user_email = %s", $user_email ) )->ID;
+$user_data = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM wpfe_usermeta WHERE user_id = %s", $user_ID ) );
+$blog_ID = get_current_blog_id();
+$user_email_exists = '';
+$nickname = '';
+foreach ($user_data as $value) {
+    if($value->meta_key == 'wpfe_' . $blog_ID . '_user_level'){
+        $user_email_exists = true;
+//        $nickname = $value->meta_value;
+        $nickname = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM wpfe_users WHERE ID = %s", $user_ID ) )->user_nicename;
+    }
+}
+?>
 
 <?php get_footer(); ?>
