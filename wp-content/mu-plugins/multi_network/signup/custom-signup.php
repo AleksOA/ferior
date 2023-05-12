@@ -250,7 +250,7 @@ function show_user_form( $user_name = '', $user_email = '', $errors = '' ) {
  *               See wpmu_validate_user_signup() for details.
  */
 function validate_user_form() {
-	return wpmu_validate_user_signup( $_POST['user_name'], $_POST['user_email'] );
+	return custom_validate_user_signup( $_POST['user_name'], $_POST['user_email'] );
 }
 
 /**
@@ -552,7 +552,8 @@ function signup_user( $user_name = '', $user_email = '', $errors = '' ) {
 	<h2>
 	<?php
 		/* translators: %s: Name of the network. */
-		printf( __( 'Get your own %s account in seconds' ), get_network()->site_name );
+//		printf( __( 'Get your own %s account in seconds' ), get_network()->site_name );
+		printf( __( 'Get your own %s account in seconds' ), get_bloginfo('name') );
 	?>
 	</h2>
 	<form id="setupform" method="post" action="" novalidate="novalidate">

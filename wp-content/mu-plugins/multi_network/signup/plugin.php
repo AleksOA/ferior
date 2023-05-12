@@ -363,3 +363,224 @@ function custom_welcome_user_notification( $user_id, $password, $meta = array() 
 
 //add_action( 'custom_activate_user', 'custom_add_new_user_to_blog', 10, 3 );
 add_action( 'custom_activate_user', 'custom_welcome_user_notification', 10, 3 );
+
+
+/**
+ * Sanitizes and validates data required for a user sign-up.
+ *
+ * Verifies the validity and uniqueness of user names and user email addresses,
+ * and checks email addresses against allowed and disallowed domains provided by
+ * administrators.
+ *
+ * The {@see 'wpmu_validate_user_signup'} hook provides an easy way to modify the sign-up
+ * process. The value $result, which is passed to the hook, contains both the user-provided
+ * info and the error messages created by the function. {@see 'wpmu_validate_user_signup'}
+ * allows you to process the data in any way you'd like, and unset the relevant errors if
+ * necessary.
+ *
+ * @since MU (3.0.0)
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ *
+ * @param string $user_name  The login name provided by the user.
+ * @param string $user_email The email provided by the user.
+ * @return array {
+ *     The array of user name, email, and the error messages.
+ *
+ *     @type string   $user_name     Sanitized and unique username.
+ *     @type string   $orig_username Original username.
+ *     @type string   $user_email    User email address.
+ *     @type WP_Error $errors        WP_Error object containing any errors found.
+ * }
+ */
+function custom_validate_user_signup( $user_name, $user_email ) {
+    global $wpdb;
+
+    $errors = new WP_Error();
+
+    $orig_username = $user_name;
+    $user_name     = preg_replace( '/\s+/', '', sanitize_user( $user_name, true ) );
+
+    if ( $user_name != $orig_username || preg_match( '/[^a-z0-9]/', $user_name ) ) {
+        $errors->add( 'user_name', __( 'Usernames can only contain lowercase letters (a-z) and numbers.' ) );
+        $user_name = $orig_username;
+    }
+
+    $user_email = sanitize_email( $user_email );
+
+    if ( empty( $user_name ) ) {
+        $errors->add( 'user_name', __( 'Please enter a username.' ) );
+    }
+
+    $illegal_names = get_site_option( 'illegal_names' );
+    if ( ! is_array( $illegal_names ) ) {
+        $illegal_names = array( 'www', 'web', 'root', 'admin', 'main', 'invite', 'administrator' );
+        add_site_option( 'illegal_names', $illegal_names );
+    }
+    if ( in_array( $user_name, $illegal_names, true ) ) {
+        $errors->add( 'user_name', __( 'Sorry, that username is not allowed.' ) );
+    }
+
+    /** This filter is documented in wp-includes/user.php */
+    $illegal_logins = (array) apply_filters( 'illegal_user_logins', array() );
+
+    if ( in_array( strtolower( $user_name ), array_map( 'strtolower', $illegal_logins ), true ) ) {
+        $errors->add( 'user_name', __( 'Sorry, that username is not allowed.' ) );
+    }
+
+    if ( ! is_email( $user_email ) ) {
+        $errors->add( 'user_email', __( 'Please enter a valid email address.' ) );
+    } elseif ( is_email_address_unsafe( $user_email ) ) {
+        $errors->add( 'user_email', __( 'You cannot use that email address to signup. There are problems with them blocking some emails from WordPress. Please use another email provider.' ) );
+    }
+
+    if ( strlen( $user_name ) < 4 ) {
+        $errors->add( 'user_name', __( 'Username must be at least 4 characters.' ) );
+    }
+
+    if ( strlen( $user_name ) > 60 ) {
+        $errors->add( 'user_name', __( 'Username may not be longer than 60 characters.' ) );
+    }
+
+    // All numeric?
+    if ( preg_match( '/^[0-9]*$/', $user_name ) ) {
+        $errors->add( 'user_name', __( 'Sorry, usernames must have letters too!' ) );
+    }
+
+    $limited_email_domains = get_site_option( 'limited_email_domains' );
+    if ( is_array( $limited_email_domains ) && ! empty( $limited_email_domains ) ) {
+        $limited_email_domains = array_map( 'strtolower', $limited_email_domains );
+        $emaildomain           = strtolower( substr( $user_email, 1 + strpos( $user_email, '@' ) ) );
+        if ( ! in_array( $emaildomain, $limited_email_domains, true ) ) {
+            $errors->add( 'user_email', __( 'Sorry, that email address is not allowed!' ) );
+        }
+    }
+
+    // Check if the username has been used already.
+    if ( username_exists( $user_name ) ) {
+        $errors->add( 'user_name', __( 'Sorry, that username already exists!' ) );
+    }
+
+    // Check if the email address has been used already.
+    if ( email_exists( $user_email ) ) {
+        // my code start ===================================
+
+        // is there the email in this blog ===========
+        $user_ID = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM wpfe_users WHERE user_email = %s", $user_email ) )->ID;
+        $user_data = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM wpfe_usermeta WHERE user_id = %s", $user_ID ) );
+        $blog_ID = get_current_blog_id();
+        $user_email_exists = false;
+        $nickname = '';
+        foreach ($user_data as $value) {
+            if($value->meta_key == 'wpfe_' . $blog_ID . '_user_level'){
+                $user_email_exists = true;
+            }
+        }
+
+        if($user_email_exists == false) {
+            $nickname = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM wpfe_users WHERE ID = %s", $user_ID ) )->user_nicename;
+        }
+        // =================================
+
+
+        if($user_email_exists == true) {
+            $errors->add(
+                'user_email',
+                sprintf(
+                /* translators: %s: Link to the login page. */
+                    __( '<strong>Error:</strong> This email address is already registered. <a href="%s">Log in</a> with this address or choose another one.' ),
+                    wp_login_url()
+                )
+            );
+        }
+
+        if($user_email_exists == false) {
+            // =================================
+
+            session_start();
+            $user_data = [
+                'user_name'=> $nickname,
+                'user_id'=> $user_ID,
+                'blog_id'=> $blog_ID
+            ];
+            $_SESSION['user_data']= $user_data;
+            // ==========================================
+
+            $errors->add(
+                'user_email',
+                sprintf(
+                /* translators: %s: Link to the login page. */
+                    __( '<strong>Error:</strong> Our site is one of the network sites shops where you bought goods or were registered as <strong>' . $nickname . '</strong>. <a href="%s">Log in</a> with this address or choose another one.' ),
+                    wp_login_url()
+
+                )
+            );
+        }
+
+
+
+        // my code finish ========================================
+
+
+
+//        $errors->add(
+//            'user_email',
+//            sprintf(
+//            /* translators: %s: Link to the login page. */
+//                __( '<strong>Error:</strong> This email address is already registered. <a href="%s">Log in</a> with this address or choose another one.' ),
+//                wp_login_url()
+//            )
+//        );
+    }
+
+    // Has someone already signed up for this username?
+    $signup = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->signups WHERE user_login = %s", $user_name ) );
+    if ( $signup instanceof stdClass ) {
+        $registered_at = mysql2date( 'U', $signup->registered );
+        $now           = time();
+        $diff          = $now - $registered_at;
+        // If registered more than two days ago, cancel registration and let this signup go through.
+        if ( $diff > 2 * DAY_IN_SECONDS ) {
+            $wpdb->delete( $wpdb->signups, array( 'user_login' => $user_name ) );
+        } else {
+            $errors->add( 'user_name', __( 'That username is currently reserved but may be available in a couple of days.' ) );
+        }
+    }
+
+    $signup = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->signups WHERE user_email = %s", $user_email ) );
+    if ( $signup instanceof stdClass ) {
+        $diff = time() - mysql2date( 'U', $signup->registered );
+        // If registered more than two days ago, cancel registration and let this signup go through.
+        if ( $diff > 2 * DAY_IN_SECONDS ) {
+            $wpdb->delete( $wpdb->signups, array( 'user_email' => $user_email ) );
+        } else {
+            $errors->add( 'user_email', __( 'That email address has already been used. Please check your inbox for an activation email. It will become available in a couple of days if you do nothing.' ) );
+        }
+    }
+
+    $result = array(
+        'user_name'     => $user_name,
+        'orig_username' => $orig_username,
+        'user_email'    => $user_email,
+        'errors'        => $errors,
+    );
+
+    /**
+     * Filters the validated user registration details.
+     *
+     * This does not allow you to override the username or email of the user during
+     * registration. The values are solely used for validation and error handling.
+     *
+     * @since MU (3.0.0)
+     *
+     * @param array $result {
+     *     The array of user name, email, and the error messages.
+     *
+     *     @type string   $user_name     Sanitized and unique username.
+     *     @type string   $orig_username Original username.
+     *     @type string   $user_email    User email address.
+     *     @type WP_Error $errors        WP_Error object containing any errors found.
+     * }
+     */
+    return apply_filters( 'wpmu_validate_user_signup', $result );
+}
