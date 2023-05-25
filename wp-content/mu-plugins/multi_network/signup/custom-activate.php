@@ -46,7 +46,7 @@ function multi_network_activate_main(){
         } else {
 //        $result = wpmu_activate_signup( $key ); // ==== WAS ====
             $result = custom_activate_signup( $key );
-            echo '<pre>'; var_dump($result);  // my code
+//            echo '<pre>'; var_dump($result);  // my code
         }
     }
 

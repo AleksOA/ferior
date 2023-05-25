@@ -63,38 +63,63 @@ function return_svg( $img, $class = '', $size = 'medium' ) {
     return $image;
 }
 
-// console_log
-// ==============================
-function console_log($data){ // сама функция
-    if(is_array($data) || is_object($data)){
-        echo("<script>console.log('php_array: ".json_encode($data)."');</script>");
-    } else {
-        echo("<script>console.log('php_string: ".$data."');</script>");
+
+// set cookies with user id after login =============================
+function set_cookies_user_id_after_login($user_login, $user) {
+    $blog_ID = get_current_blog_id();
+
+    if($blog_ID == 1){
+        $rp_path = '/';
+        $user_id = $user->ID;
+        $user_id_cookie = 'user_id_login_main-' . COOKIEHASH;
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, $user_id, 0, $rp_path, $siteName, is_ssl(), true );
+    }
+
+    if($blog_ID != 1){
+        $rp_path = '/';
+        $user_id = $user->ID;
+        $user_id_cookie = 'user_id_login-' . COOKIEHASH;
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, $user_id, 0, $rp_path, $siteName, is_ssl(), true );
+    }
+
+}
+add_action('wp_login', 'set_cookies_user_id_after_login', 10, 2);
+// ==================================================================
+
+// Deleting cookies when user logs out  ===========================
+function deleting_cookies_when_user_logs_out( $user_id ){
+    $blog_ID = get_current_blog_id();
+
+    if($blog_ID == 1){
+        $user_id_cookie = 'user_id_login_main-' . COOKIEHASH;
+        unset($_COOKIE[$user_id_cookie]);
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, '', time() - 3600, '/', $siteName, is_ssl(), true );
+    }
+
+    if($blog_ID != 1){
+        $user_id_cookie = 'user_id_login-' . COOKIEHASH;
+        unset($_COOKIE[$user_id_cookie]);
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, '', time() - 3600, '/', $siteName, is_ssl(), true );
     }
 }
-
-//$test='dsa';
-//console_log($test);
-// =========================================
-
-function myfunctuin(){
-//    $out = '<h2>wpcf7_after_submit</h2>';
-//  echo $out;
-    header ('Location: http://site2.multisite.loc/wp-login.php');
-    exit;
-//    echo '<meta http-equiv="refresh" content="0;url=http://site2.multisite.loc/wp-login.php">';
-}
-
-
-
+add_action( 'wp_logout', 'deleting_cookies_when_user_logs_out' );
+// ======================================================================
 
 // If the current user does not register on the current site, the current user is logged out.
 // ============================================================================================
-function logout_user(){
+function login_or_logout_user(){
     global $wpdb;
     $blog_ID = get_current_blog_id();
     if($blog_ID == 1){
-        $user_ID = get_current_user_id();
+        $user_id_cookie = 'user_id_login_main-' . COOKIEHASH;
+        if ( isset( $_COOKIE[ $user_id_cookie ] ) ) {
+            $user_ID = wp_unslash( $_COOKIE[ $user_id_cookie ] );
+        }
+
         $user_data = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM wpfe_usermeta WHERE user_id = %s", $user_ID ) );
         $user_email_exists = false;
         foreach ($user_data as $value) {
@@ -105,13 +130,26 @@ function logout_user(){
         if($user_email_exists == false){
             wp_logout();
         }
+
+        if($user_email_exists == true){
+            if(!is_user_logged_in()) {
+                wp_set_auth_cookie( $user_ID  );
+                header("Refresh: 0");
+                exit();
+            }
+        }
     }
 
     if($blog_ID != 1){
         if(current_user_can('Super Admin' )) {
             return true;
         }else{
-            $user_ID = get_current_user_id();
+//            $user_ID = get_current_user_id();
+            $user_id_cookie = 'user_id_login-' . COOKIEHASH;
+            if ( isset( $_COOKIE[ $user_id_cookie ] ) ) {
+                $user_ID = wp_unslash( $_COOKIE[ $user_id_cookie ] );
+            }
+
             $user_data = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM wpfe_usermeta WHERE user_id = %s", $user_ID ) );
             $blog_ID = get_current_blog_id();
             $user_email_exists = false;
@@ -123,10 +161,18 @@ function logout_user(){
             if($user_email_exists == false){
                 wp_logout();
             }
+
+            if($user_email_exists == true){
+                if(!is_user_logged_in()) {
+                    wp_set_auth_cookie( $user_ID );
+                    header("Refresh: 0");
+                    exit();
+                }
+            }
         }
     }
 }
-add_action('init', 'logout_user' );
+add_action('init', 'login_or_logout_user' );
 // ========================================================================================
 
 function wpcf7_before_send_mail_action() {
@@ -204,7 +250,7 @@ function create_user_and_blog( $entry, $form ) {
         );
         $result = wp_insert_site($data_site);
 
-        // ==============================================
+        // user authorisation ==============================================
         $creds = array();
         $creds['user_login'] = $username;
         $creds['user_password'] = $password;

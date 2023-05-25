@@ -49,7 +49,7 @@
         if(is_user_logged_in() ) :  ?>
             <section class="form">
                 <?php
-                $title_form_main_form_home_template = get_field('title_form_main_form_home_template');
+                $title_form_main_form_home_template = 'Fill out the form to create your website';
                 ?>
                 <div class="container">
                     <?php if( $title_form_main_form_home_template ) : ?>
