@@ -1618,9 +1618,51 @@ function custom_authenticate_add_user_to_blog($user, $username, $password) {
             $user_id = $user_data["user_id"];
             $role = 'subscriber';
             add_user_to_blog($blog_id, $user_id, $role);
+            $_SESSION['user_data'] = null;
         }
     }
     return $user;
 }
     add_filter( 'authenticate', 'custom_authenticate_add_user_to_blog', 100, 3 );
+// ======================================================================
+
+//  Add new blog existing user   ============================
+function custom_add_existing_user_to_main_blog($user, $username, $password) {
+    global $wpdb;
+    $user_data = $_SESSION['user_data'];
+    $user_ID = $user_data["user_id"];
+
+    $user_data = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM wpfe_usermeta WHERE user_id = %s", $user_ID ) );
+    $blog_ID = get_current_blog_id();
+    $user_email_exists = false;
+    foreach ($user_data as $value) {
+        if($value->meta_key == 'wpfe_user_level'){
+            $user_email_exists = true;
+        }
+    }
+
+    if($user_email_exists == false) {
+        $role = 'subscriber';
+        add_user_to_blog($blog_ID, $user_ID, $role);
+    }
+
+    return $user;
+}
+add_filter( 'authenticate', 'custom_add_existing_user_to_main_blog', 100, 3 );
+
+function custom_add_new_blog_existing_user($redirect_to, $request, $user){
+    $user_data = $_SESSION['user_data'];
+
+    if($user_data) {
+        $action = $user_data["action"];
+        if($action == 'new blog') {
+            return home_url();
+        }
+    }
+    else{
+        return $redirect_to;
+    }
+}
+add_filter( 'login_redirect', 'custom_add_new_blog_existing_user', 10, 3 );
+
 // ======================================================================

@@ -63,40 +63,117 @@ function return_svg( $img, $class = '', $size = 'medium' ) {
     return $image;
 }
 
-// console_log
-// ==============================
-function console_log($data){ // сама функция
-    if(is_array($data) || is_object($data)){
-        echo("<script>console.log('php_array: ".json_encode($data)."');</script>");
-    } else {
-        echo("<script>console.log('php_string: ".$data."');</script>");
+
+// set cookies with user id after login =============================
+function set_cookies_user_id_after_login($user_login, $user) {
+    $blog_ID = get_current_blog_id();
+
+    if($blog_ID == 1){
+        $rp_path = '/';
+        $user_id = $user->ID;
+        $user_id_cookie = 'user_id_login_main-' . COOKIEHASH;
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, $user_id, 0, $rp_path, $siteName, is_ssl(), true );
+    }
+
+    if($blog_ID != 1){
+        $rp_path = '/';
+        $user_id = $user->ID;
+        $user_id_cookie = 'user_id_login-' . COOKIEHASH;
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, $user_id, 0, $rp_path, $siteName, is_ssl(), true );
+    }
+
+}
+add_action('wp_login', 'set_cookies_user_id_after_login', 10, 2);
+// ==================================================================
+
+// Deleting cookies when user logs out  ===========================
+function deleting_cookies_when_user_logs_out( $user_id ){
+    $blog_ID = get_current_blog_id();
+
+    if($blog_ID == 1){
+        $user_id_cookie = 'user_id_login_main-' . COOKIEHASH;
+        unset($_COOKIE[$user_id_cookie]);
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, '', time() - 3600, '/', $siteName, is_ssl(), true );
+    }
+
+    if($blog_ID != 1){
+        $user_id_cookie = 'user_id_login-' . COOKIEHASH;
+        unset($_COOKIE[$user_id_cookie]);
+        $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+        setcookie( $user_id_cookie, '', time() - 3600, '/', $siteName, is_ssl(), true );
     }
 }
+add_action( 'wp_logout', 'deleting_cookies_when_user_logs_out' );
+// ======================================================================
 
-//$test='dsa';
-//console_log($test);
-// =========================================
+// If the current user does not register on the current site, the current user is logged out.
+// ============================================================================================
+function login_or_logout_user(){
+    global $wpdb;
+    $blog_ID = get_current_blog_id();
+    if($blog_ID == 1){
+        $user_id_cookie = 'user_id_login_main-' . COOKIEHASH;
+        if ( isset( $_COOKIE[ $user_id_cookie ] ) ) {
+            $user_ID = wp_unslash( $_COOKIE[ $user_id_cookie ] );
+        }
 
-function myfunctuin(){
-//    $out = '<h2>wpcf7_after_submit</h2>';
-//  echo $out;
-    header ('Location: http://site2.multisite.loc/wp-login.php');
-    exit;
-//    echo '<meta http-equiv="refresh" content="0;url=http://site2.multisite.loc/wp-login.php">';
+        $user_data = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM wpfe_usermeta WHERE user_id = %s", $user_ID ) );
+        $user_email_exists = false;
+        foreach ($user_data as $value) {
+            if($value->meta_key == 'wpfe_user_level'){
+                $user_email_exists = true;
+            }
+        }
+        if($user_email_exists == false){
+            wp_logout();
+        }
+
+        if($user_email_exists == true){
+            if(!is_user_logged_in()) {
+                wp_set_auth_cookie( $user_ID  );
+                header("Refresh: 0");
+                exit();
+            }
+        }
+    }
+
+    if($blog_ID != 1){
+        if(current_user_can('Super Admin' )) {
+            return true;
+        }else{
+//            $user_ID = get_current_user_id();
+            $user_id_cookie = 'user_id_login-' . COOKIEHASH;
+            if ( isset( $_COOKIE[ $user_id_cookie ] ) ) {
+                $user_ID = wp_unslash( $_COOKIE[ $user_id_cookie ] );
+            }
+
+            $user_data = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM wpfe_usermeta WHERE user_id = %s", $user_ID ) );
+            $blog_ID = get_current_blog_id();
+            $user_email_exists = false;
+            foreach ($user_data as $value) {
+                if($value->meta_key == 'wpfe_' . $blog_ID . '_user_level'){
+                    $user_email_exists = true;
+                }
+            }
+            if($user_email_exists == false){
+                wp_logout();
+            }
+
+            if($user_email_exists == true){
+                if(!is_user_logged_in()) {
+                    wp_set_auth_cookie( $user_ID );
+                    header("Refresh: 0");
+                    exit();
+                }
+            }
+        }
+    }
 }
-
-
-
-function wpcf7_after_submit() {
-
-}
-
-// ===========================
-//wp_delete_user( $id, $reassign );
-
-
-// ===========================
-
+add_action('init', 'login_or_logout_user' );
+// ========================================================================================
 
 function wpcf7_before_send_mail_action() {
     $submission = WPCF7_Submission::get_instance();
@@ -138,19 +215,218 @@ function wpcf7_before_send_mail_action() {
     );
     wp_insert_site( $data_site );
 }
+// Create user and blog ====================================
+function create_user_and_blog( $entry, $form ) {
+    $first_name = rgar( $entry, '1.3' );
+    $last_name = rgar( $entry, '1.6' );
+    $username = rgar( $entry, '8' );
+    $email = rgar( $entry, '5' );
+    $site_url = rgar( $entry, '9' );
+    $site_name = rgar( $entry, '10' );
+    $password = rgar( $entry, '11' );
 
+    $userdata = array(
+//        'ID' => $current_user_ID,
+        'user_login' => $username,
+        'user_email' => $email,
+        'first_name' => $first_name,
+        'last_name' => $last_name,
+        'user_pass' => $password,
+        'role' => 'subscriber'
+    );
+    $new_user = wp_insert_user( $userdata );
+
+    if(!is_wp_error($new_user)){
+        $current_user_ID = email_exists($email);
+        $data_site = array(
+            'domain' => $site_url. '.ferior.com.ua',
+            'title' => $site_name,
+            'user_id' => $current_user_ID,
+            'options' => array(
+                'template' => 'multisite',
+                'stylesheet' => 'multisite'
+//                'current_theme' => 'Twenty Twenty-Two'
+            )
+        );
+        $result = wp_insert_site($data_site);
+
+        // user authorisation ==============================================
+        $creds = array();
+        $creds['user_login'] = $username;
+        $creds['user_password'] = $password;
+        $creds['remember'] = true;
+
+        $user = wp_signon( $creds, false );
+
+        if ( is_wp_error($user) ) {
+            echo $user->get_error_message();
+        }
+        // =======================================================
+
+        if(!is_wp_error($result)) {
+            $url_redirect = 'http://' . $data_site['domain'] . '/wp-admin';
+            wp_redirect( $url_redirect );
+            exit;
+        }
+    }
+}
+add_action( 'gform_after_submission_1', 'create_user_and_blog', 10, 2 );
+
+function create_blog( $entry, $form ){
+    $site_url = rgar($entry, '1');
+    $site_name = rgar($entry, '3');
+    $current_user_ID = rgar($entry, 'created_by');
+    $_SESSION['user_data'] = null;
+
+    $data_site = array(
+        'domain' => $site_url . '.ferior.com.ua',
+        'title' => $site_name,
+        'user_id' => $current_user_ID,
+        'options' => array(
+            'template' => 'multisite',
+            'stylesheet' => 'multisite'
+            //                'current_theme' => 'Twenty Twenty-Two'
+        )
+    );
+    $result = wp_insert_site($data_site);
+
+    if(!is_wp_error($result)) {
+        $url_redirect = 'http://' . $data_site['domain'] . '/wp-admin';
+        wp_redirect( $url_redirect );
+        exit;
+    }
+
+}
+add_action( 'gform_after_submission_3', 'create_blog', 10, 2 );
+// ========================================================================
+
+
+
+// Validate form Create user and blog
+// ===================================
+
+function custom_validation_input_main_form_gravity_1_5($result, $value, $form, $field)
+{
+    global $wpdb;
+    $input_name = 'input_5';
+
+    $the_value = $_POST[$input_name];
+    $current_user_ID = email_exists($the_value);
+    $nickname = $wpdb->get_row($wpdb->prepare("SELECT * FROM wpfe_users WHERE ID = %s", $current_user_ID))->user_nicename;
+    if ($current_user_ID != false) {
+        $error_text_of_field_email = 'Our site is one of the network sites shops where you bought goods or were registered as <strong>' . $nickname . '</strong>. <a href="' . home_url('login') . '">Log in</a> with this address or choose another one.';
+        $result['is_valid'] = false;
+        $result['message'] = $error_text_of_field_email;
+        // =================================
+        $blog_ID = get_current_blog_id();
+        session_start();
+        $user_data = [
+            'user_name'=> $nickname,
+            'user_id'=> $current_user_ID,
+            'blog_id'=> $blog_ID,
+            'action'=> 'new blog'
+        ];
+        $_SESSION['user_data']= $user_data;
+        // ==========================================
+    }
+    return $result;
+}
+add_filter( 'gform_field_validation_1_5', 'custom_validation_input_main_form_gravity_1_5', 10, 5 );
+
+function custom_validation_input_main_form_gravity_1_8($result, $value, $form, $field)
+{
+
+    $input_name = 'input_8';
+    $the_current_value = $_POST[$input_name];
+    $current_user_ID = username_exists($the_current_value);
+    if($current_user_ID != false){
+        $error_text_of_field_username = get_field('error_text_of_field_username', 'options');
+        $result['is_valid'] = false;
+        $result['message'] = $error_text_of_field_username;
+    }
+
+    return $result;
+
+}
+add_filter( 'gform_field_validation_1_8', 'custom_validation_input_main_form_gravity_1_8', 10, 5 );
+
+function custom_validation_input_main_form_gravity_1_9($result, $value, $form, $field)
+{
+    $input_name = 'input_9';
+    $the_current_value = $_POST[$input_name];
+    $current_domain = $the_current_value . '.ferior.com.ua';
+    $object_sites_name = get_sites();
+    $sites_name = [];
+    if( $object_sites_name ) : foreach ( $object_sites_name as $item ) :
+        $item_domain = $item->domain;
+        if($item_domain == $current_domain) {
+            array_push($sites_name, $item_domain);
+        }
+    endforeach;
+    endif;
+
+    if(count($sites_name) > 0){
+        $error_text_of_field_site_address_url = get_field('error_text_of_field_site_address_url', 'options');
+        $result['is_valid'] = false;
+        $result['message'] = $error_text_of_field_site_address_url;
+    }
+    return $result;
+}
+add_filter( 'gform_field_validation_1_9', 'custom_validation_input_main_form_gravity_1_9', 10, 5 );
+// ======================================
+
+
+// Validate form Create blog
+// ===================================
+function custom_validation_input_main_form_gravity_3_1($result, $value, $form, $field)
+{
+    $input_name = 'input_1';
+    $the_current_value = $_POST[$input_name];
+    $current_domain = $the_current_value . '.ferior.com.ua';
+    $object_sites_name = get_sites();
+    $sites_name = [];
+    if( $object_sites_name ) : foreach ( $object_sites_name as $item ) :
+        $item_domain = $item->domain;
+        if($item_domain == $current_domain) {
+            array_push($sites_name, $item_domain);
+        }
+    endforeach;
+    endif;
+
+    if(count($sites_name) > 0){
+        $error_text_of_field_site_address_url = get_field('error_text_of_field_site_address_url', 'options');
+        $result['is_valid'] = false;
+        $result['message'] = $error_text_of_field_site_address_url;
+    }
+    return $result;
+}
+
+add_filter( 'gform_field_validation_3_1', 'custom_validation_input_main_form_gravity_3_1', 10, 5 );
+// ===================================
 
 // Validate form
 // ===================================
 function custom_validation_input_main_form($result,$tag){
+    global $wpdb;
     $input_name = $tag['name'];
     $type = $tag['type'];
 
     if($input_name == 'email-547') {
         $the_value = $_POST[$input_name];
         $current_user_ID = email_exists($the_value);
+        $nickname = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM wpfe_users WHERE ID = %s", $current_user_ID ) )->user_nicename;
         if($current_user_ID != false){
-            $error_text_of_field_email = get_field('error_text_of_field_email', 'options');
+//            $error_text_of_field_email = get_field('error_text_of_field_email', 'options');
+//            function hello_world_cf7_func() {
+//                global $nickname;
+//                return 'Our site is one of the network sites shops where you bought goods or were registered as <strong>' . $nickname . '</strong>. <a href="' . home_url('login') . '">Log in</a> with this address or choose another one.';
+//            }
+//            add_shortcode('hello_world', 'hello_world_cf7_func');
+
+//            $error_text_of_field_email = 'Our site is one of the network sites shops where you bought goods or were registered as <strong>' . $nickname . '</strong>. <a href="' . home_url('login') . '">Log in</a> with this address or choose another one.';
+            $error_text_of_field_email = '<a href="' . home_url('login') . '">Log in</a>';
+//            $error_text_of_field_email = do_shortcode('[hello_world]');
+
             $result->invalidate($tag, $error_text_of_field_email);
         }
         return $result;
@@ -321,6 +597,10 @@ function redirect_login_page() {
     }
     if( $page_viewed == "wp-login.php?action=lostpassword" && $_SERVER['REQUEST_METHOD'] == 'GET') {
         wp_redirect($lostpassword);
+        exit;
+    }
+    if( $page_viewed == "wp-login.php?redirect_to=http%3A%2F%2Fferior.com.ua%2Fwp-admin%2Fadmin.php%3Fpage%3Dgf_edit_forms&reauth=1" && $_SERVER['REQUEST_METHOD'] == 'GET') {
+        wp_redirect($login_page);
         exit;
     }
 }

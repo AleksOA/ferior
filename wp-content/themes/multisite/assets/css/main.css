@@ -35,12 +35,12 @@ body.popup-open {
 /*font-family: 'Open Sans', sans-serif;*/
 
 button, input, textarea {
-    padding: 0;
-    border: none;
-    font: inherit;
-    color: inherit;
-    background-color: transparent;
-    cursor: pointer;
+    /*padding: 0;*/
+    /*border: none;*/
+    /*font: inherit;*/
+    /*color: inherit;*/
+    /*background-color: transparent;*/
+    /*cursor: pointer;*/
     outline: -webkit-focus-ring-color auto 0;
 }
 button:focus-visible {
@@ -123,7 +123,8 @@ input::placeholder {
 .main-form__password-check,
 .main-form__site-url,
 .main-form__username,
-.form-sing-up__form input {
+.form-sing-up__form input,
+.gfield input {
     font-family: 'Montserrat', sans-serif;
     font-weight: 400;
     font-size: 18px;
@@ -158,7 +159,8 @@ input::placeholder {
 .main-form__password-check:hover,
 .main-form__site-url:hover,
 .main-form__username:hover,
-.form-sing-up__form input:hover {
+.form-sing-up__form input:hover,
+.gfield input:hover{
     transition: all 0.3s;
     box-shadow: 0 3px 16px 2px rgb(48 108 26 / 0.2);
     border: 1px solid rgba(48, 108, 26, 0.6);
@@ -172,7 +174,8 @@ input::placeholder {
 .main-form__password-check:focus-visible,
 .main-form__site-url:focus-visible,
 .main-form__username:focus-visible,
-.form-sing-up__form input:focus-visible {
+.form-sing-up__form input:focus-visible,
+.gfield input:focus-visible {
     box-shadow: 0 3px 16px 2px rgba(74, 76, 80, 0.40);
     border: 1px solid rgba(74, 76, 80, 0.6);
     cursor: text;
@@ -182,7 +185,8 @@ input::placeholder {
 .main-form__email {}
 .main-form__site-name {}
 .main-form__submit,
-p .submit {
+p .submit,
+.gform_button {
     box-sizing: border-box;
     font-family: 'Libre Franklin', sans-serif;
     font-weight: 700;
@@ -202,12 +206,14 @@ p .submit {
     margin-top: 30px;
 }
 .main-form__submit:hover,
-p .submit:hover{
+p .submit:hover,
+.gform_button:hover{
     background-color: rgb(36 124 2);
     border: 2px solid rgb(36 124 2);
 }
 .main-form__submit:active,
-p .submit:active {
+p .submit:active,
+.gform_button:active {
     scale: 0.99;
     background-color: rgb(26 68 10);
     border: 2px solid rgb(26 68 10);
@@ -219,6 +225,19 @@ form p{
 .wpcf7-spinner {
     display: none;
 }
+
+/*Create user and blog
+============================*/
+.gform_heading {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.validation_message {
+    border-radius: 8px;
+}
+
+
 
 /*=================================
 Home finish*/
