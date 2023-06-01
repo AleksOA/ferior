@@ -181,64 +181,99 @@ function custom_activate_signup( $key ) {
     $meta     = maybe_unserialize( $signup->meta );
     $password = wp_generate_password( 12, false );
 
-    $user_id = username_exists( $signup->user_login );
 
-    if ( ! $user_id ) {
-        $user_id = wpmu_create_user( $signup->user_login, $password, $signup->user_email );
-    } else {
-        $user_already_exists = true;
-    }
-
-    if ( ! $user_id ) {
-        return new WP_Error( 'create_user', __( 'Could not create user' ), $signup );
-    }
-
-    $now = current_time( 'mysql', true );
-
-    if ( empty( $signup->domain ) ) {
-        $wpdb->update(
-            $wpdb->signups,
-            array(
-                'active'    => 1,
-                'activated' => $now,
-            ),
-            array( 'activation_key' => $key )
+    if($meta["spot"] == 'create user and blog') {
+        $userdata = array(
+            //        'ID' => $current_user_ID,
+            'user_login' => $signup->user_login,
+            'user_email' => $signup->user_email,
+            'first_name' => $meta["first_name"],
+            'last_name' => $meta["last_name"],
+            'user_pass' => $password,
+            'role' => 'subscriber'
         );
+        $user_id = wp_insert_user($userdata);
 
-        if ( isset( $user_already_exists ) ) {
-            return new WP_Error( 'user_already_exists', __( 'That username is already activated.' ), $signup );
+
+        $now = current_time('mysql', true);
+
+        if (empty($signup->domain)) {
+            $wpdb->update(
+                $wpdb->signups,
+                array(
+                    'active' => 1,
+                    'activated' => $now,
+                    'meta' => ''
+                ),
+                array('activation_key' => $key)
+            );
+
+            if (isset($user_already_exists)) {
+                return new WP_Error('user_already_exists', __('That username is already activated.'), $signup);
+            }
         }
 
-        /**
-         * Fires immediately after a new user is activated.
-         *
-         * @since MU (3.0.0)
-         *
-         * @param int    $user_id  User ID.
-         * @param string $password User password.
-         * @param array  $meta     Signup meta data.
-         */
-//        do_action( 'wpmu_activate_user', $user_id, $password, $meta ); // ==== WAS ====
-        do_action( 'custom_activate_user', $user_id, $password, $meta );
 
-        return array(
-            'user_id'  => $user_id,
-            'password' => $password,
-            'meta'     => $meta,
-        );
-    }
+        if (!is_wp_error($user_id)) {
+            $current_user_ID = $user_id;
+            $data_site = array(
+                'domain' => $meta["domain"],
+                'title' => $meta["title"],
+                'user_id' => $current_user_ID,
+                'options' => array(
+                    'template' => 'multisite',
+                    'stylesheet' => 'multisite'
+//                'current_theme' => 'Twenty Twenty-Two'
+                )
+            );
+            $blog_id = wp_insert_site($data_site);
 
-    $blog_id = wpmu_create_blog( $signup->domain, $signup->path, $signup->title, $user_id, $meta, get_current_network_id() );
 
-    // TODO: What to do if we create a user but cannot create a blog?
-    if ( is_wp_error( $blog_id ) ) {
-        /*
-         * If blog is taken, that means a previous attempt to activate this blog
-         * failed in between creating the blog and setting the activation flag.
-         * Let's just set the active flag and instruct the user to reset their password.
-         */
-        if ( 'blog_taken' === $blog_id->get_error_code() ) {
-            $blog_id->add_data( $signup );
+            // user authorisation ==============================================
+            $creds = array();
+            $creds['user_login'] = $signup->user_login;
+            $creds['user_password'] = $password;
+            $creds['remember'] = true;
+
+            $user = wp_signon($creds, false);
+
+            if (is_wp_error($user)) {
+                echo $user->get_error_message();
+            }
+            // =======================================================
+
+            if(!is_wp_error($blog_id)){
+                $rp_path = '/';
+                $user_id = $user->ID;
+                $user_id_cookie = 'user_id_login-' . COOKIEHASH;
+                $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
+                setcookie( $user_id_cookie, $user_id, 0, $rp_path, $siteName, is_ssl(), true );
+
+                $blog_url = get_site_url( $blog_id );
+                $meta += ['blog_url' => $blog_url ];
+                do_action('custom_activate_user', $user_id, $password, $meta);
+                $url_redirect = $blog_url . '/wp-admin';
+                wp_redirect($url_redirect);
+                exit;
+            }
+        }
+
+    }else{
+        $user_id = username_exists( $signup->user_login );
+
+        if ( ! $user_id ) {
+            $user_id = wpmu_create_user( $signup->user_login, $password, $signup->user_email );
+        } else {
+            $user_already_exists = true;
+        }
+
+        if ( ! $user_id ) {
+            return new WP_Error( 'create_user', __( 'Could not create user' ), $signup );
+        }
+
+        $now = current_time( 'mysql', true );
+
+        if ( empty( $signup->domain ) ) {
             $wpdb->update(
                 $wpdb->signups,
                 array(
@@ -247,39 +282,85 @@ function custom_activate_signup( $key ) {
                 ),
                 array( 'activation_key' => $key )
             );
+
+            if ( isset( $user_already_exists ) ) {
+                return new WP_Error( 'user_already_exists', __( 'That username is already activated.' ), $signup );
+            }
+
+            /**
+             * Fires immediately after a new user is activated.
+             *
+             * @since MU (3.0.0)
+             *
+             * @param int    $user_id  User ID.
+             * @param string $password User password.
+             * @param array  $meta     Signup meta data.
+             */
+//        do_action( 'wpmu_activate_user', $user_id, $password, $meta ); // ==== WAS ====
+            do_action( 'custom_activate_user', $user_id, $password, $meta );
+
+            return array(
+                'user_id'  => $user_id,
+                'password' => $password,
+                'meta'     => $meta,
+            );
         }
-        return $blog_id;
     }
 
-    $wpdb->update(
-        $wpdb->signups,
-        array(
-            'active'    => 1,
-            'activated' => $now,
-        ),
-        array( 'activation_key' => $key )
-    );
 
-    /**
-     * Fires immediately after a site is activated.
-     *
-     * @since MU (3.0.0)
-     *
-     * @param int    $blog_id       Blog ID.
-     * @param int    $user_id       User ID.
-     * @param string $password      User password.
-     * @param string $signup_title  Site title.
-     * @param array  $meta          Signup meta data. By default, contains the requested privacy setting and lang_id.
-     */
-    do_action( 'wpmu_activate_blog', $blog_id, $user_id, $password, $signup->title, $meta );
 
-    return array(
-        'blog_id'  => $blog_id,
-        'user_id'  => $user_id,
-        'password' => $password,
-        'title'    => $signup->title,
-        'meta'     => $meta,
-    );
+//    $blog_id = wpmu_create_blog( $signup->domain, $signup->path, $signup->title, $user_id, $meta, get_current_network_id() );
+//
+//    // TODO: What to do if we create a user but cannot create a blog?
+//    if ( is_wp_error( $blog_id ) ) {
+//        /*
+//         * If blog is taken, that means a previous attempt to activate this blog
+//         * failed in between creating the blog and setting the activation flag.
+//         * Let's just set the active flag and instruct the user to reset their password.
+//         */
+//        if ( 'blog_taken' === $blog_id->get_error_code() ) {
+//            $blog_id->add_data( $signup );
+//            $wpdb->update(
+//                $wpdb->signups,
+//                array(
+//                    'active'    => 1,
+//                    'activated' => $now,
+//                ),
+//                array( 'activation_key' => $key )
+//            );
+//        }
+//        return $blog_id;
+//    }
+//
+//    $wpdb->update(
+//        $wpdb->signups,
+//        array(
+//            'active'    => 1,
+//            'activated' => $now,
+//        ),
+//        array( 'activation_key' => $key )
+//    );
+//
+//    /**
+//     * Fires immediately after a site is activated.
+//     *
+//     * @since MU (3.0.0)
+//     *
+//     * @param int    $blog_id       Blog ID.
+//     * @param int    $user_id       User ID.
+//     * @param string $password      User password.
+//     * @param string $signup_title  Site title.
+//     * @param array  $meta          Signup meta data. By default, contains the requested privacy setting and lang_id.
+//     */
+//    do_action( 'wpmu_activate_blog', $blog_id, $user_id, $password, $signup->title, $meta );
+//
+//    return array(
+//        'blog_id'  => $blog_id,
+//        'user_id'  => $user_id,
+//        'password' => $password,
+//        'title'    => $signup->title,
+//        'meta'     => $meta,
+//    );
 }
 
 function custom_welcome_user_notification( $user_id, $password, $meta = array() ) {
@@ -319,11 +400,10 @@ function custom_welcome_user_notification( $user_id, $password, $meta = array() 
      * @param array  $meta          Signup meta data. Default empty array.
      */
     $welcome_email = apply_filters( 'update_welcome_user_email', $welcome_email, $user_id, $password, $meta );
-//    $welcome_email = str_replace( 'SITE_NAME', $current_network->site_name, $welcome_email ); // ==== WAS ====
-    $welcome_email = str_replace( 'SITE_NAME', get_option( 'blogname' ), $welcome_email ); // my code
+    $welcome_email = str_replace( 'SITE_NAME', get_option( 'blogname' ), $welcome_email );
     $welcome_email = str_replace( 'USERNAME', $user->user_login, $welcome_email );
     $welcome_email = str_replace( 'PASSWORD', $password, $welcome_email );
-    $welcome_email = str_replace( 'LOGINLINK', wp_login_url(), $welcome_email );
+    $welcome_email = str_replace( 'LOGINLINK', home_url('login'), $welcome_email );
 
     $admin_email = get_site_option( 'admin_email' );
 
@@ -334,6 +414,53 @@ function custom_welcome_user_notification( $user_id, $password, $meta = array() 
     $from_name       = ( '' !== get_option( 'blogname' ) ) ? esc_html( get_option( 'blogname' ) ) : 'WordPress';
     $message_headers = "From: \"{$from_name}\" <{$admin_email}>\n" . 'Content-Type: text/plain; charset="' . get_option( 'blog_charset' ) . "\"\n";
     $message         = $welcome_email;
+
+    if($meta["spot"] == 'create user and blog'){
+       $text_email = __(
+           'Howdy USERNAME,
+
+Your new account and site are set up.
+
+You can log in with the following information: 
+Username: USERNAME
+Password: PASSWORD
+Link to SITE_NAME: LINK_TO_MAIN_BLOG
+Link to NEW_BLOG_NAME: LINK_TO_NEW_BLOG
+
+Thanks!
+
+--The Team @ SITE_NAME'
+       );
+        $text_email = str_replace( 'SITE_NAME', get_option( 'blogname' ), $text_email );
+        $text_email = str_replace( 'USERNAME', $user->user_login, $text_email );
+        $text_email = str_replace( 'PASSWORD', $password, $text_email );
+        $text_email = str_replace( 'LINK_TO_MAIN_BLOG', home_url('login'), $text_email );
+        $text_email = str_replace( 'LINK_TO_NEW_BLOG', $meta["blog_url"] . '/login', $text_email );
+        $text_email = str_replace( 'NEW_BLOG_NAME', $meta["title"], $text_email );
+        $message = $text_email;
+
+    }
+
+    if($meta["spot"] == 'create blog'){
+        $text_email = __(
+            'Howdy USERNAME,
+
+Your new site is set up.
+
+You can go to the admin panel of the new site:
+LINK_TO_NEW_BLOG
+
+Thanks!
+
+--The Team @ SITE_NAME'
+        );
+        $text_email = str_replace( 'SITE_NAME', get_option( 'blogname' ), $text_email );
+        $text_email = str_replace( 'USERNAME', $user->user_login, $text_email );
+        $text_email = str_replace( 'LINK_TO_NEW_BLOG', $meta["blog_url"] . '/wp-admin', $text_email );
+        $message = $text_email;
+    }
+
+
 
     if ( empty( $current_network->site_name ) ) {
         $current_network->site_name = 'WordPress';
