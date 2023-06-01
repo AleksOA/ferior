@@ -13,8 +13,9 @@
         </div>
     </section>
     <?php
+    $network_site_name = wp_parse_url( network_site_url(), PHP_URL_HOST );
     $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
-    if($siteName == 'ferior.com.ua') : ?>
+    if($siteName == $network_site_name ) : ?>
 <!--        <section class="form">-->
 <!--            --><?php
 //            $title_form_main_form_home_template = get_field('title_form_main_form_home_template');
@@ -65,7 +66,8 @@
 
     <?php
     $siteName = wp_parse_url( home_url(), PHP_URL_HOST );
-    if($siteName != 'ferior.com.ua') : ?>
+//    if($siteName != 'ferior.com.ua') :
+    if($siteName != $network_site_name ) : ?>
         <?php if(!is_user_logged_in() ) : ?>
         <section class="form">
             <div class="container">
